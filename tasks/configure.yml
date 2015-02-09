@@ -1,11 +1,17 @@
 ---
+- name: Stat php conf dir
+  stat: path={{ php_conf_path }}
+  register: php_conf_dir
+  
+- name: Stat php extension conf dir
+  stat: path={{ php_extension_conf_path }} follow=true
+  register: php_extension_conf_dir
+  
 - name: Ensure configuration directories exist.
-  file:
-    path: "{{ item }}"
-    state: directory
-  with_items:
-    - "{{ php_conf_path }}"
-    - "{{ php_extension_conf_path }}"
+  assert:
+    that:
+      - php_conf_exists: php_conf_dir.stat.isdir is defined and php_conf_dir.stat.isdir
+      - php_extension_conf_exists: php_extension_conf_dir.stat.isdir is defined and php_extension_conf_dir.stat.isdir
 
 - name: Place PHP configuration file in place.
   template:
