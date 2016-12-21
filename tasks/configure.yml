@@ -43,13 +43,8 @@
     group: root
     force: yes
     mode: 0644
-<<<<<<< HEAD
-<<<<<<< HEAD
   with_items: "{{ php_extension_conf_paths }}"
   when: php_enable_apc
-=======
-=======
->>>>>>> origin
   when: php_enable_apc and not mods_available_exists|bool
   notify: restart webserver
 
@@ -61,10 +56,6 @@
     group: root
     mode: 0644
   when: php_enable_apc and mods_available_exists|bool
-<<<<<<< HEAD
->>>>>>> origin
-=======
->>>>>>> origin
   notify: restart webserver
 
 - name: Place OpCache configuration file in place.
