@@ -16,28 +16,35 @@
     mods_available_exists: "{{ php_mods_available_dir.stat.isdir is defined and php_mods_available_dir.stat.isdir }}"
 
 - name: Ensure configuration directories exist.
-  assert:
-    that:
-      -  php_conf_dir.stat.isdir is defined and php_conf_dir.stat.isdir
-      -  php_extension_conf_dir.stat.isdir is defined and php_extension_conf_dir.stat.isdir
+  file:
+    path: "{{ item }}"
+    state: directory
+    follow: true
+  with_flattened:
+    - "{{ php_conf_paths }}"
+    - "{{ php_extension_conf_paths }}"
 
 - name: Place PHP configuration file in place.
   template:
     src: php.ini.j2
-    dest: "{{ php_conf_path }}/php.ini"
+    dest: "{{ item }}/php.ini"
     owner: root
     group: root
     mode: 0644
+  with_items: "{{ php_conf_paths }}"
   notify: restart webserver
   when: php_use_managed_ini
 
 - name: Place APC configuration file into extension conf dir.
   template:
     src: apc.ini.j2
-    dest: "{{ php_extension_conf_path }}/{{ php_apc_conf_filename }}"
+    dest: "{{ item }}/{{ php_apc_conf_filename }}"
     owner: root
     group: root
+    force: yes
     mode: 0644
+  with_items: "{{ php_extension_conf_paths }}"
+  when: php_enable_apc
   when: php_enable_apc and not mods_available_exists|bool
   notify: restart webserver
 
@@ -51,9 +58,14 @@
   when: php_enable_apc and mods_available_exists|bool
   notify: restart webserver
 
-- name: Ensure php-fpm is started and enabled at boot (if configured).
-  service:
-    name: "{{ php_fpm_daemon }}"
-    state: started
-    enabled: yes
-  when: php_enable_php_fpm
+- name: Place OpCache configuration file in place.
+  template:
+    src: opcache.ini.j2
+    dest: "{{ item }}/{{ php_opcache_conf_filename }}"
+    owner: root
+    group: root
+    force: yes
+    mode: 0644
+  with_items: "{{ php_extension_conf_paths }}"
+  when: php_opcache_enable
+  notify: restart webserver
