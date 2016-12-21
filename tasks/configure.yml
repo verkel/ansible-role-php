@@ -1,4 +1,20 @@
 ---
+- name: Stat php conf dir
+  stat: path={{ php_conf_path }}
+  register: php_conf_dir
+
+- name: Stat php extension conf dir
+  stat: path={{ php_extension_conf_path }} follow=true
+  register: php_extension_conf_dir
+
+- name: Stat mods-available
+  stat: path={{ php_mods_available_path }}
+  register: php_mods_available_dir
+
+- name: Check if mods-available exists
+  set_fact:
+    mods_available_exists: "{{ php_mods_available_dir.stat.isdir is defined and php_mods_available_dir.stat.isdir }}"
+
 - name: Ensure configuration directories exist.
   file:
     path: "{{ item }}"
@@ -19,7 +35,7 @@
   notify: restart webserver
   when: php_use_managed_ini
 
-- name: Place APC configuration file in place.
+- name: Place APC configuration file into extension conf dir.
   template:
     src: apc.ini.j2
     dest: "{{ item }}/{{ php_apc_conf_filename }}"
@@ -27,8 +43,22 @@
     group: root
     force: yes
     mode: 0644
+<<<<<<< HEAD
   with_items: "{{ php_extension_conf_paths }}"
   when: php_enable_apc
+=======
+  when: php_enable_apc and not mods_available_exists|bool
+  notify: restart webserver
+
+- name: Place APC configuration file into mods_available.
+  template:
+    src: apc.ini.j2
+    dest: "{{ php_mods_available_path }}/{{ php_apc_conf_ma_filename }}"
+    owner: root
+    group: root
+    mode: 0644
+  when: php_enable_apc and mods_available_exists|bool
+>>>>>>> origin
   notify: restart webserver
 
 - name: Place OpCache configuration file in place.
